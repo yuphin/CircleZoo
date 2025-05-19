@@ -49,28 +49,28 @@ void draw_ellipse_midpoint(int cx, int cy, int rx, int ry, Color color) {
 
 	int ry2 = ry * ry;
 	int rx2 = rx * rx;
-	const float invRx2 = 1.0f / rx2;
-	const float invRy2 = 1.0f / ry2;
-	float D = 0.5 * (1 - 2 * rx) * invRx2 + invRy2;
+	const float inv_rx2 = 1.0f / rx2;
+	const float inv_ry2 = 1.0f / ry2;
+	float D = 0.5 * (1 - 2 * rx) * inv_rx2 + inv_ry2;
 	while (ry2 * x > rx2 * y) {
 		set_4_px(cx, cy, x, y, color);
 		if (D > 0) {
-			D += (-2 * x + 3) * invRx2 + (2 * y + 3) * invRy2;
+			D += (-2 * x + 3) * inv_rx2 + (2 * y + 3) * inv_ry2;
 			x--;
 		} else {
-			D += (2 * y + 3) * invRy2;
+			D += (2 * y + 3) * inv_ry2;
 		}
 		y++;
 	}
 
-	D = (x - 1) * (x - 1) * invRx2 + (y + 0.5) * (y + 0.5) * invRy2 - 1;
+	D = (x - 1) * (x - 1) * inv_rx2 + (y + 0.5) * (y + 0.5) * inv_ry2 - 1;
 	while (x >= 0) {
 		set_4_px(cx, cy, x, y, color);
 
 		if (D > 0) {
-			D += (-2 * x + 3) * invRx2;
+			D += (-2 * x + 3) * inv_rx2;
 		} else {
-			D += (-2 * x + 3) * invRx2 + (2 * y + 2) * invRy2;
+			D += (-2 * x + 3) * inv_rx2 + (2 * y + 2) * inv_ry2;
 			y++;
 		}
 		x--;
@@ -78,21 +78,21 @@ void draw_ellipse_midpoint(int cx, int cy, int rx, int ry, Color color) {
 }
 void draw_ellipse_analytical_dtheta(int cx, int cy, int rx, int ry, Color color) {
 	float theta = 0;
-	const float invRx = 1.0f / rx;
-	const float invRy = 1.0f / ry;
-	const float thetaEnd = degToRad(90);
-	const float sinThetaMax = 1 - invRy;
-	while (theta <= thetaEnd) {
-		const float cosTheta = cos(theta);
-		const float sinTheta = sin(theta);
-		float x = rx * cosTheta;
-		float y = ry * sinTheta;
+	const float inv_rx = 1.0f / rx;
+	const float inv_ry = 1.0f / ry;
+	const float theta_end = degToRad(90);
+	const float sin_theta_max = 1 - inv_ry;
+	while (theta <= theta_end) {
+		const float cos_theta = cos(theta);
+		const float sin_theta = sin(theta);
+		float x = rx * cos_theta;
+		float y = ry * sin_theta;
 		set_4_px(cx, cy, round(x), round(y), color);
-		float dTheta = acos(-invRx + cosTheta) - theta;
-		if (sinTheta < sinThetaMax) {
-			dTheta = fmin(dTheta, asin(invRy + sinTheta) - theta);
+		float d_theta = acos(-inv_rx + cos_theta) - theta;
+		if (sin_theta < sin_theta_max) {
+			d_theta = fmin(d_theta, asin(inv_ry + sin_theta) - theta);
 		}
-		theta += dTheta;
+		theta += d_theta;
 	}
 	// Draw top and bottom
 	frame_buffer[(cx + 0) + (cy + ry) * TEX_WIDTH] = color;
@@ -101,24 +101,22 @@ void draw_ellipse_analytical_dtheta(int cx, int cy, int rx, int ry, Color color)
 
 void draw_circle_analytical_dtheta(int cx, int cy, int radius, Color color, bool approximate) {
 	float theta = 0;
-	const float thetaEnd = degToRad(45);
-	const float invR = 1.0f / radius;
+	const float theta_end = degToRad(45);
+	const float inv_r = 1.0f / radius;
 
-	float cosTheta = cos(theta);
-	float sinTheta = sin(theta);
-	while (theta <= thetaEnd) {
-		const float cosTheta = cos(theta);
-		const float sinTheta = sin(theta);
-		float x = radius * cosTheta;
-		float y = radius * sinTheta;
+	while (theta <= theta_end) {
+		const float cos_theta = cos(theta);
+		const float sin_theta = sin(theta);
+		float x = radius * cos_theta;
+		float y = radius * sin_theta;
 		set_8_px(cx, cy, round(x), round(y), color);
 		if (approximate) {
-			// dTheta = ds / r ~ 1 / r (i.e 1 px arc len)
-			theta += invR;
+			// d_theta = ds / r ~ 1 / r (i.e 1 px arc len)
+			theta += inv_r;
 		} else {
-			float dThetaX = acos(-invR + cosTheta) - theta;
-			float dThetaY = asin(invR + sinTheta) - theta;
-			theta += fmin(dThetaX, dThetaY);
+			float d_theta_x = acos(-inv_r + cos_theta) - theta;
+			float d_theta_y = asin(inv_r + sin_theta) - theta;
+			theta += fmin(d_theta_x, d_theta_y);
 		}
 	}
 }
@@ -176,7 +174,7 @@ int main(void) {
 	Texture2D tex = LoadTextureFromImage(img);
 	SetTextureFilter(tex, TEXTURE_FILTER_POINT);
 	UnloadImage(img);
-	const char* method_names[] = {"Midpoint Circle", "DDA", "Analytical dTheta", "Jeskos", "Analytical Ellipse",
+	const char* method_names[] = {"Midpoint Circle", "DDA", "Analytical d_theta", "Jeskos", "Analytical Ellipse",
 								  "Midpoint Ellipse"};
 	uint32_t frame_counter = 0;
 	while (!WindowShouldClose()) {
